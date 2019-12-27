@@ -656,7 +656,7 @@ extension SMCKit {
     }
 
     public static func fan(_ id: Int) throws -> Fan {
-        let name = try fanName(id)
+        let name = String(format: "Fan%02d", id)
         let minSpeed = try fanMinSpeed(id)
         let maxSpeed = try fanMaxSpeed(id)
         return Fan(id: id, name: name, minSpeed: minSpeed, maxSpeed: maxSpeed)
