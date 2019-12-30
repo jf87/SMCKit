@@ -474,6 +474,8 @@ public struct TemperatureSensors {
     public static let AMBIENT_AIR_1 = TemperatureSensor(name: "AMBIENT_AIR_1",
                                    code: FourCharCode(fromStaticString: "TA1P"))
     // Via powermetrics(1)
+    public static let CPU_PECI = TemperatureSensor(name: "CPU_PECI",
+                                   code: FourCharCode(fromStaticString: "TCXC"))
     public static let CPU_0_DIE = TemperatureSensor(name: "CPU_0_DIE",
                                    code: FourCharCode(fromStaticString: "TC0F"))
     public static let CPU_0_DIODE = TemperatureSensor(name: "CPU_0_DIODE",
@@ -541,6 +543,7 @@ public struct TemperatureSensors {
 
     public static let all = [AMBIENT_AIR_0.code : AMBIENT_AIR_0,
                              AMBIENT_AIR_1.code : AMBIENT_AIR_1,
+                             CPU_PECI.code : CPU_PECI,
                              CPU_0_DIE.code : CPU_0_DIE,
                              CPU_0_DIODE.code : CPU_0_DIODE,
                              CPU_0_HEATSINK.code : CPU_0_HEATSINK,
