@@ -84,6 +84,10 @@ let CLIVersionOption     = BoolOption(shortFlag: "v", longFlag: "version",
 let CLIWarnOption        = BoolOption(shortFlag: "w", longFlag: "warn",
       helpMessage: "Show warning levels for temperature sensors and fan speeds")
 
+let CLIJsonOption        = BoolOption(shortFlag: "j", longFlag: "json",
+      helpMessage: "Show values as json")
+
+
 // Keep this list sorted by short flag. This will be the order that it is
 // printed when printUsage() ('--help') is called
 let CLIOptions = [CLIColorOption,
@@ -98,7 +102,8 @@ let CLIOptions = [CLIColorOption,
                   CLITemperatureOption,
                   CLIUnknownTemperatureOption,
                   CLIVersionOption,
-                  CLIWarnOption]
+                  CLIWarnOption,
+                  CLIJsonOption]
 
 let CLI = CommandLine()
 CLI.addOptions(CLIOptions)
@@ -191,6 +196,122 @@ func printTemperatureInformation(known: Bool = true) {
         print("\(color.rawValue)\(temperature)°C \(level)" +
               "\(ANSIColor.Off.rawValue)")
     }
+}
+
+extension Double {
+    func format(f: String) -> String {
+        return String(format: "%\(f)f", self)
+    }
+}
+
+func printJsonInformation(known: Bool = true) {
+    print("{ \"temperature\":{")
+    let doubleFormat = ".2"
+
+    let sensors: [TemperatureSensor]
+    do {
+        if known {
+            sensors = try SMCKit.allKnownTemperatureSensors().sorted
+                                                           { $0.name < $1.name }
+        } else {
+            sensors = try SMCKit.allUnknownTemperatureSensors()
+        }
+
+    } catch {
+        print(error)
+        return
+    }
+
+
+    let sensorWithLongestName = sensors.max { $0.name.characters.count <
+                                                     $1.name.characters.count }
+
+    guard let longestSensorNameCount = sensorWithLongestName?.name.characters.count else {
+        print("No temperature sensors found")
+        return
+    }
+
+    var i = 0
+    for sensor in sensors {
+
+        guard let temperature = try? SMCKit.temperature(sensor.code) else {
+            print("NA")
+            return
+        }
+        if i == (sensors.count-1) {
+            // last value
+            print("\"\(sensor.name)\" : \(temperature.format(f:doubleFormat))")
+        }
+        else {
+            print("\"\(sensor.name)\" : \(temperature.format(f:doubleFormat)),")
+        }
+        i = i + 1
+    }
+    print("},")
+    
+    
+    print("\"fan\":{")
+
+    let allFans: [Fan]
+    do {
+        allFans = try SMCKit.allFans()
+    } catch {
+        print(error)
+        return
+    }
+
+    if allFans.count == 0 { print("No fans found") }
+
+    i = 0
+    for fan in allFans {
+//        print("[id \(fan.id)] \(fan.name)")
+//        print("\tMin:      \(fan.minSpeed) RPM")
+//        print("\tMax:      \(fan.maxSpeed) RPM")
+
+        guard let currentSpeed = try? SMCKit.fanCurrentSpeed(fan.id) else {
+//            print("\tCurrent:  NA")
+            return
+        }
+
+//        let warning = warningLevel(value: Double(currentSpeed),
+//                                   maxValue: Double(fan.maxSpeed))
+//        let level = CLIWarnOption.wasSet ? "(\(warning.name))" : ""
+//        let color = CLIColorOption.wasSet ? warning.color : ANSIColor.Off
+//        print("\tCurrent:  \(color.rawValue)\(currentSpeed) RPM \(level)" +
+//                                                    "\(ANSIColor.Off.rawValue)")
+        
+        if i == (allFans.count-1) {
+            // last value
+            print("\"\(fan.name)\" : {\"currrent\" : \(currentSpeed), \"min\" : \(fan.minSpeed), \"max\" : \(fan.maxSpeed)}")
+        }
+        else {
+            print("\"\(fan.name)\" : {\"currrent\" : \(currentSpeed), \"min\" : \(fan.minSpeed), \"max\" : \(fan.maxSpeed)},")
+        }
+        i = i + 1
+    }
+    print("},")
+
+    let information: batteryInfo
+    do {
+        information = try SMCKit.batteryInformation()
+    } catch {
+        print(error)
+        return
+    }
+    print("\"isACPresent\" : \(information.isACPresent),")
+    print("\"Battery Powered\" : \(information.isBatteryPowered),")
+    print("\"isCharging\" : \(information.isCharging),")
+    print("\"isBatteryOk\" : \(information.isBatteryOk),")
+    print("\"batteryCount\" : \(information.batteryCount)")
+
+//    print("Battery Powered:  \(colorBoolOutput(value: information.isBatteryPowered))")
+//    print("Charging:         \(colorBoolOutput(value: information.isCharging))")
+//    print("Battery Ok:       \(colorBoolOutput(value: information.isBatteryOk))")
+//    print("Battery Count:    \(information.batteryCount)")
+
+    print("}")
+
+
 }
 
 func printFanInformation() {
@@ -343,5 +464,6 @@ if CLIUnknownTemperatureOption.wasSet { printTemperatureInformation(known: false
 if CLIFanOption.wasSet                { printFanInformation()         }
 if CLIPowerOption.wasSet              { printPowerInformation()       }
 if CLIMiscOption.wasSet               { printMiscInformation()        }
+if CLIJsonOption.wasSet               { printJsonInformation()        }
 
 SMCKit.close()

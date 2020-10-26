@@ -99,8 +99,8 @@ if let output = NSString(data: data, encoding: String.Encoding.utf8.rawValue) {
         let tokens = line.components(separatedBy: " ")
 
         if line.hasPrefix("Fan:") && line.hasSuffix("rpm") {
-            let powermetricsRPM = Int(tokens[1])!
-            let diff = abs(Int(smcRPM) - powermetricsRPM)
+            let powermetricsRPM = Int(tokens[1])
+            let diff = abs(Int(smcRPM) - powermetricsRPM!)
 
             print("SMCKit fan 0 RPM:     \(smcRPM)")
             print("powermetrics fan RPM: \(powermetricsRPM)")

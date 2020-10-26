@@ -29,6 +29,7 @@
 
 import IOKit
 import Foundation
+import Accelerate
 
 //------------------------------------------------------------------------------
 // MARK: Type Aliases
@@ -96,12 +97,44 @@ public extension Int {
     }
 }
 
+
+enum Bit: UInt8, CustomStringConvertible {
+    case zero, one
+
+    var description: String {
+        switch self {
+        case .one:
+            return "1"
+        case .zero:
+            return "0"
+        }
+    }
+}
+
+func bits(fromByte byte: UInt8) -> [Bit] {
+    var byte = byte
+    var bits = [Bit](repeating: .zero, count: 8)
+    for i in 0..<8 {
+        let currentBit = byte & 0x01
+        if currentBit != 0 {
+            bits[i] = .one
+        }
+
+        byte >>= 1
+    }
+
+    return bits
+}
+
 extension Double {
 
     init(fromSP78 bytes: SP78) {
         // FIXME: Handle second byte
-        let sign = bytes.0 & 0x80 == 0 ? 1.0 : -1.0
-        self = sign * Double(bytes.0 & 0x7F)    // AND to mask sign bit
+//        let sign = bytes.0 & 0x80 == 0 ? 1.0 : -1.0
+//        self = sign * Double(bytes.0 & 0x7F)    // AND to mask sign bit 0111 1111
+        
+        let v: Double = Double(Int(bytes.0) * 256 + Int(bytes.1))
+        self = Double(v / 256.0)
     }
     
     init(fromFLT bytes: FLT) {
@@ -628,9 +661,7 @@ extension SMCKit {
     public static func temperature(_ sensorCode: FourCharCode,
                              unit: TemperatureUnit = .celius) throws -> Double {
         let data = try readData(SMCKey(code: sensorCode, info: DataTypes.SP78))
-
         let temperatureInCelius = Double(fromSP78: (data.0, data.1))
-
         switch unit {
         case .celius:
             return temperatureInCelius
